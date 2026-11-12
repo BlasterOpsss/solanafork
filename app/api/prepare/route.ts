@@ -17,7 +17,6 @@ const SOL_AMOUNT = new BN("1000000000");
 
 export async function POST(request: NextRequest) {
   try {
-    // This endpoint is intended for a private Codespaces development session only.
     if (process.env.LAUNCHER_ENABLED !== "true") {
       return NextResponse.json({ error: "Launcher is disabled. Set LAUNCHER_ENABLED=true after reviewing the setup." }, { status: 403 });
     }
@@ -63,13 +62,18 @@ export async function POST(request: NextRequest) {
       holderReward: false,
     });
 
-    const { blockhash } = await connection.getLatestBlockhash("confirmed");
-    const tx = new Transaction({ feePayer: user, recentBlockhash: blockhash });
+    const latest = await connection.getLatestBlockhash("confirmed");
+    const tx = new Transaction({ feePayer: user, recentBlockhash: latest.blockhash });
     tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 500000 }));
     tx.add(...instructions);
     tx.partialSign(mint);
     const serialized = tx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString("base64");
-    return NextResponse.json({ mint: mintAddress, transaction: serialized });
+    return NextResponse.json({
+      mint: mintAddress,
+      transaction: serialized,
+      blockhash: latest.blockhash,
+      lastValidBlockHeight: latest.lastValidBlockHeight,
+    });
   } catch (error) {
     console.error("prepare transaction failed", error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Could not prepare transaction." }, { status: 500 });
