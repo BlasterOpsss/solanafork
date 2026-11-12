@@ -15,6 +15,8 @@ export default function Home() {
   const wallet = useWallet();
   const [mint, setMint] = useState("");
   const [transaction, setTransaction] = useState("");
+  const [blockhash, setBlockhash] = useState("");
+  const [lastValidBlockHeight, setLastValidBlockHeight] = useState(0);
   const [status, setStatus] = useState("Connect Phantom to prepare your launch.");
   const [busy, setBusy] = useState(false);
 
@@ -31,10 +33,12 @@ export default function Home() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to prepare transaction.");
-      if (!data.mint || !data.transaction) throw new Error("Server returned an incomplete transaction.");
-      if (!data.mint.toLowerCase().endsWith(MINT_SUFFIX)) throw new Error("Generated mint does not have the required suffix.");
+      if (!data.mint || !data.transaction || !data.blockhash || !data.lastValidBlockHeight) throw new Error("Server returned an incomplete transaction.");
+      if (!data.mint.endsWith(MINT_SUFFIX)) throw new Error("Generated mint does not have the exact required lowercase suffix.");
       setMint(data.mint);
       setTransaction(data.transaction);
+      setBlockhash(data.blockhash);
+      setLastValidBlockHeight(data.lastValidBlockHeight);
       setStatus("Transaction prepared and mint keypair has signed its part. Review the details, then approve in Phantom.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unexpected error.");
@@ -44,10 +48,11 @@ export default function Home() {
   }
 
   async function approveAndSend() {
-    if (!wallet.publicKey || !wallet.signTransaction || !transaction) return;
+    if (!wallet.publicKey || !wallet.signTransaction || !transaction || !blockhash || !lastValidBlockHeight) return;
     setBusy(true);
     try {
-      const tx = Transaction.from(Buffer.from(transaction, "base64"));
+      const raw = Uint8Array.from(atob(transaction), (char) => char.charCodeAt(0));
+      const tx = Transaction.from(raw);
       const signed = await wallet.signTransaction(tx);
       setStatus("Phantom approved. Sending the signed transaction to Solana mainnet...");
       const signature = await connection.sendRawTransaction(signed.serialize(), {
@@ -56,8 +61,7 @@ export default function Home() {
         maxRetries: 3,
       });
       setStatus("Transaction submitted: " + signature + "\nWaiting for confirmation...");
-      const latest = await connection.getLatestBlockhash("confirmed");
-      await connection.confirmTransaction({ signature, ...latest }, "confirmed");
+      await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, "confirmed");
       setStatus("Launch transaction confirmed. Signature: " + signature);
       setTransaction("");
     } catch (error) {
@@ -79,7 +83,7 @@ export default function Home() {
       <div className="label">Metadata URI</div><div className="value">{METADATA_URI}</div>
       <div className="label">Vanity suffix</div><div className="value">...fork</div>
       <div className="label">Initial buy</div><div className="value">1 SOL (plus network and protocol fees)</div>
-      <div className="warning">This is a real mainnet transaction. Approving it in Phantom spends approximately 1 SOL plus fees. Verify the wallet, metadata, mint address and transaction in Phantom before approving.</div>
+      <div className="warning">This is a real mainnet transaction. Approving it in Phantom spends approximately 1 SOL plus fees. Verify the wallet, amount, mint address and transaction details in Phantom before approving.</div>
       <div className="actions"><WalletMultiButton /></div>
       {wallet.publicKey && <div className="small">Connected: {wallet.publicKey.toBase58()}</div>}
       <div className="actions"><button className="button" disabled={!wallet.publicKey || busy} onClick={prepare}>{busy ? "Working..." : "Prepare launch transaction"}</button>
