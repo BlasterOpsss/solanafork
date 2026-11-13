@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 const CREATOR = "2Enbz8kpr3XeuEahLdx9kyqa4JSmripKioAK3AAwNPSj";
 const NAME = "REPO";
 const SYMBOL = "REPO";
-const URI = "https://copper-main-toad-738.mypinata.cloud/ipfs/bafkreidykminp2dnx2dpt336za3mnjuogvil2qkkkc6qshthzy67m5rtqy";
+const URI = "https://ipfs.io/ipfs/bafkreidykminp2dnx2dpt336za3mnjuogvil2qkkkc6qshthzy67m5rtqy";
 const SOL_AMOUNT = new BN("1000000000");
 
 export async function POST(request: NextRequest) {
@@ -64,8 +64,11 @@ export async function POST(request: NextRequest) {
 
     const latest = await connection.getLatestBlockhash("confirmed");
     const tx = new Transaction({ feePayer: user, recentBlockhash: latest.blockhash });
-    tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 500000 }));
     tx.add(...instructions);
+    const serializedSize = tx.serialize({ requireAllSignatures: false, verifySignatures: false }).length;
+    if (serializedSize > 1232) {
+      return NextResponse.json({ error: `Transaction is still too large (${serializedSize} bytes). It must be rebuilt with a supported versioned transaction or smaller instruction set.` }, { status: 413 });
+    }
     tx.partialSign(mint);
     const serialized = tx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString("base64");
     return NextResponse.json({
