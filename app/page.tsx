@@ -31,8 +31,17 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ creator: wallet.publicKey.toBase58() }),
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Unable to prepare transaction.");
+      const responseText = await response.text();
+      let data: any = {};
+      if (responseText) {
+        try {
+          data = JSON.parse(responseText);
+        } catch {
+          throw new Error(`Launcher API returned non-JSON data (HTTP ${response.status}). Check the Codespaces terminal for the server error.`);
+        }
+      }
+      if (!response.ok) throw new Error(data.error || `Unable to prepare transaction (HTTP ${response.status}). Check the Codespaces terminal.`);
+      if (!responseText) throw new Error(`Launcher API returned an empty response (HTTP ${response.status}). Check the Codespaces terminal for a crash or compile error.`);
       if (!data.mint || !data.transaction || !data.blockhash || !data.lastValidBlockHeight) throw new Error("Server returned an incomplete transaction.");
       if (!data.mint.endsWith(MINT_SUFFIX)) throw new Error("Generated mint does not have the exact required lowercase suffix.");
       setMint(data.mint);
