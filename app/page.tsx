@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { PhantomConnect } from "./phantom-connect";
 import "@solana/wallet-adapter-react-ui/styles.css";
 import { Transaction } from "@solana/web3.js";
 
@@ -84,7 +84,7 @@ export default function Home() {
       <div className="label">Vanity suffix</div><div className="value">...fork</div>
       <div className="label">Initial buy</div><div className="value">1 SOL (plus network and protocol fees)</div>
       <div className="warning">This is a real mainnet transaction. Approving it in Phantom spends approximately 1 SOL plus fees. Verify the wallet, amount, mint address and transaction details in Phantom before approving.</div>
-      <div className="actions"><WalletMultiButton /></div>
+      <div className="actions"><PhantomConnect /></div>
       {wallet.publicKey && <div className="small">Connected: {wallet.publicKey.toBase58()}</div>}
       <div className="actions"><button className="button" disabled={!wallet.publicKey || busy} onClick={prepare}>{busy ? "Working..." : "Prepare launch transaction"}</button>
       <button className="button secondary" disabled={!transaction || busy || !wallet.publicKey} onClick={approveAndSend}>Approve in Phantom & launch</button></div>
