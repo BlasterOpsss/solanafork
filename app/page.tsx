@@ -7,7 +7,7 @@ import "@solana/wallet-adapter-react-ui/styles.css";
 import { Transaction } from "@solana/web3.js";
 
 const MINT_SUFFIX = "fork";
-const METADATA_URI = "https://copper-main-toad-738.mypinata.cloud/ipfs/bafkreidykminp2dnx2dpt336za3mnjuogvil2qkkkc6qshthzy67m5rtqy";
+const METADATA_URI = "https://ipfs.io/ipfs/bafkreidykminp2dnx2dpt336za3mnjuogvil2qkkkc6qshthzy67m5rtqy";
 const CREATOR = "2Enbz8kpr3XeuEahLdx9kyqa4JSmripKioAK3AAwNPSj";
 
 export default function Home() {
